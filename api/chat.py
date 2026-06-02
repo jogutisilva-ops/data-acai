@@ -108,8 +108,10 @@ class handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({'response': text_response}).encode('utf-8'))
         except Exception as e:
+            key_preview = api_key[:6] + "..." if api_key else "None"
+            key_len = len(api_key) if api_key else 0
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': 'Error de conexión con Gemini: ' + str(e)}).encode('utf-8'))
+            self.wfile.write(json.dumps({'error': f'Error de conexión con Gemini (Key: {key_preview}, len: {key_len}): {str(e)}'}).encode('utf-8'))
