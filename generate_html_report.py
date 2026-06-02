@@ -261,6 +261,139 @@ html_template = f"""<!DOCTYPE html>
             --radius-lg: 24px;
         }}
 
+        @keyframes pulse-accent {{
+            0% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.4); }}
+            70% {{ box-shadow: 0 0 0 8px rgba(233, 30, 99, 0); }}
+            100% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }}
+        }}
+
+        .animate-pulse-accent {{
+            border: 2px solid var(--accent) !important;
+            animation: pulse-accent 2s infinite;
+        }}
+
+        .chat-wrapper {{
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }}
+
+        .chat-history {{
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background-color: #FAF9FC;
+        }}
+
+        .chat-message {{
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            line-height: 1.5;
+            animation: chatSlideUp 0.3s ease;
+        }}
+
+        @keyframes chatSlideUp {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+
+        .message-assistant {{
+            align-self: flex-start;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 4px;
+            color: var(--text-main);
+        }}
+
+        .message-user {{
+            align-self: flex-end;
+            background-color: var(--primary);
+            color: white;
+            border-top-right-radius: 4px;
+        }}
+
+        .message-user * {{
+            color: white;
+        }}
+
+        .chat-suggestions {{
+            display: flex;
+            gap: 10px;
+            padding: 12px 24px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }}
+
+        .suggestion-chip {{
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }}
+
+        .suggestion-chip:hover {{
+            background-color: var(--primary);
+            color: white;
+        }}
+
+        .chat-input-bar {{
+            display: flex;
+            padding: 16px 24px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            gap: 12px;
+            align-items: center;
+        }}
+
+        .chat-input {{
+            flex-grow: 1;
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            height: 46px;
+        }}
+
+        .chat-input:focus {{
+            border-color: var(--primary);
+        }}
+
+        .chat-send-btn {{
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            height: 46px;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        .chat-send-btn:hover {{
+            background-color: var(--primary-dark);
+        }}
+
         * {{
             box-sizing: border-box;
             margin: 0;
@@ -725,6 +858,10 @@ html_template = f"""<!DOCTYPE html>
                 <svg class="size-4" style="fill: currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                 Consolidaciones
             </button>
+            <button class="tab-btn animate-pulse-accent" onclick="switchTab('tab-assistant')">
+                <svg class="size-4" style="fill: currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12zm-3-5h-2V9h2v2zm-4 0h-2V9h2v2zm-4 0H7V9h2v2z"/></svg>
+                Asistente de Consultas (AI)
+            </button>
         </div>
 
         <!-- KPI Summary Cards -->
@@ -1060,6 +1197,45 @@ html_template += f"""
             </div>
         </div>
 
+        <!-- TAB 5: Query Assistant (AI) -->
+        <div id="tab-assistant" class="tab-content">
+            <div class="section-card" style="padding: 0; overflow: hidden; border-radius: var(--radius-md);">
+                <div style="padding: 24px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white;">
+                    <h2 style="color: white; font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                        💬 Asistente Virtual Açaí Prime
+                    </h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 13px;">Haz preguntas en lenguaje natural sobre las ventas, comisiones y los criterios de consolidación de productos.</p>
+                </div>
+                
+                <div class="chat-wrapper">
+                    <!-- Chat Message History -->
+                    <div id="chatHistory" class="chat-history">
+                        <div class="chat-message message-assistant">
+                            ¡Hola! Soy tu asistente de datos de <strong>Açaí Prime</strong>. Puedo darte respuestas y análisis inmediatos basados en las planillas procesadas. Pregúntame sobre el producto más vendido, comisiones de pago, ingresos netos o escribe el nombre de un producto para ver su detalle.<br><br>
+                            ¿Qué te gustaría analizar hoy?
+                        </div>
+                    </div>
+                    
+                    <!-- Suggested Questions Chips -->
+                    <div class="chat-suggestions">
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es el producto estrella (más vendido)?')">⭐ Producto Estrella</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuánto dinero se pagó en comisiones?')">💸 Comisiones Totales</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Qué día es el más fuerte en ventas?')">📅 Día con más Ventas</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál fue la venta neta real?')">🛡️ Ingreso Neto Real</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cómo se consolidaron las hamburguesas o aguas?')">🛠️ Consolidaciones</span>
+                    </div>
+                    
+                    <!-- Chat Input Field -->
+                    <div class="chat-input-bar">
+                        <input type="text" id="chatInput" class="chat-input" placeholder="Pregúntame algo, ej. ¿Cuánto vendió Cheese Burger?" onkeydown="checkChatEnter(event)">
+                        <button onclick="sendChatMessage()" class="chat-send-btn">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <footer>
@@ -1074,6 +1250,12 @@ html_template += f"""
         const weeklyData = {json.dumps(weekly_sales_js)};
         const catData = {json.dumps(cat_sales_js)};
         const paymentData = {json.dumps(payment_list_js)};
+        
+        // Totals injected from Python
+        const totalGross = {total_gross};
+        const totalFees = {total_fees};
+        const totalNetReal = {total_net_real};
+        const totalTx = {total_tx};
 
         let currentSort = {{ column: 'units', direction: 'desc' }};
 
@@ -1093,7 +1275,7 @@ html_template += f"""
             document.getElementById(tabId).classList.add('active');
             
             // Find button matching tabId click
-            const btnIdx = tabId === 'tab-dashboard' ? 0 : tabId === 'tab-fees' ? 1 : tabId === 'tab-products' ? 2 : 3;
+            const btnIdx = tabId === 'tab-dashboard' ? 0 : tabId === 'tab-fees' ? 1 : tabId === 'tab-products' ? 2 : tabId === 'tab-unifications' ? 3 : 4;
             document.querySelectorAll('.tab-btn')[btnIdx].classList.add('active');
         }}
 
@@ -1172,6 +1354,158 @@ html_template += f"""
             document.getElementById('minUnits').value = '';
             document.getElementById('minAmount').value = '';
             filterProducts();
+        }}
+
+        // Chat bot functions
+        function askSuggested(text) {{
+            document.getElementById('chatInput').value = text;
+            sendChatMessage();
+        }}
+
+        function checkChatEnter(event) {{
+            if (event.key === 'Enter') {{
+                sendChatMessage();
+            }}
+        }}
+
+        function sendChatMessage() {{
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            // Clear input
+            input.value = '';
+            
+            // Append user message
+            appendMessage(text, 'user');
+            
+            // Show typing indicator
+            const history = document.getElementById('chatHistory');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message message-assistant';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<em>Analizando datos...</em>';
+            history.appendChild(typingDiv);
+            history.scrollTop = history.scrollHeight;
+            
+            // Simulate natural delay for a nicer chatbot feel
+            setTimeout(() => {{
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) indicator.remove();
+                
+                const answer = getAssistantAnswer(text);
+                appendMessage(answer, 'assistant');
+            }}, 600);
+        }}
+
+        function appendMessage(htmlContent, sender) {{
+            const history = document.getElementById('chatHistory');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message message-${{sender}}`;
+            msgDiv.innerHTML = htmlContent;
+            history.appendChild(msgDiv);
+            history.scrollTop = history.scrollHeight;
+        }}
+
+        function getAssistantAnswer(query) {{
+            query = query.toLowerCase().trim();
+            
+            // Normalize accents
+            const normalized = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            // Mas vendido / estrella
+            if (normalized.includes("mas vendido") || normalized.includes("estrella") || normalized.includes("mejor producto") || normalized.includes("top producto") || normalized.includes("lider")) {{
+                const top = productsData[0];
+                return `El producto estrella es <strong>${{top.name}}</strong> con <strong>${{top.units.toLocaleString('es-CL')}} unidades</strong> vendidas y una recaudación bruta de <strong>${{top.revenue.toLocaleString('es-CL', {{style: 'currency', currency: 'CLP', maximumFractionDigits: 0}})}}</strong>.`;
+            }}
+            
+            // Comisiones / fees
+            if (normalized.includes("comision") || normalized.includes("comisiones") || normalized.includes("cobro") || normalized.includes("descuento forma de pago") || normalized.includes("porcentaje total")) {{
+                const pct = ((totalFees / totalGross) * 100).toFixed(2);
+                let detail = `Se pagó un total de <strong>$${{totalFees.toLocaleString('es-CL')}} CLP</strong> en comisiones bancarias (representa el <strong>${{pct}}%</strong> de las ventas brutas totales).<br><br><strong>Detalle por medio de pago:</strong><ul>`;
+                paymentData.forEach(p => {{
+                    if (p.fee > 0) {{
+                        detail += `<li style="margin-bottom: 4px;"><strong>${{p.name}}</strong> (Tasa: ${{p.rate}}%): $${{p.fee.toLocaleString('es-CL')}} CLP de comisión (Recaudación neta: $${{p.net.toLocaleString('es-CL')}} CLP)</li>`;
+                    }}
+                }});
+                detail += `</ul>`;
+                return detail;
+            }}
+            
+            // Neto / real
+            if (normalized.includes("neto") || normalized.includes("ingreso real") || normalized.includes("ganancia real") || normalized.includes("cuanto recibi") || normalized.includes("ingreso neto")) {{
+                return `El ingreso neto real (recaudación bruta menos comisiones) es de <strong>$${{totalNetReal.toLocaleString('es-CL')}} CLP</strong> (sobre una venta bruta total de <strong>$${{totalGross.toLocaleString('es-CL')}} CLP</strong>).`;
+            }}
+            
+            // Bruto / total
+            if (normalized.includes("bruto") || normalized.includes("venta total") || normalized.includes("recaudacion total") || (normalized.includes("cuanto") && normalized.includes("vendio") && !normalized.includes("neto") && !normalized.includes("capuccino") && !normalized.includes("burger") && !normalized.includes("agua") && !normalized.includes("fanta"))) {{
+                return `La venta bruta total en el periodo registrado es de <strong>$${{totalGross.toLocaleString('es-CL')}} CLP</strong> a través de <strong>${{totalTx.toLocaleString('es-CL')}} transacciones</strong>.`;
+            }}
+            
+            // Dia de la semana
+            if (normalized.includes("dia") && (normalized.includes("venta") || normalized.includes("fuerte") || normalized.includes("mejor") || normalized.includes("semana"))) {{
+                const sortedDays = [...dowData].sort((a, b) => b.gross - a.gross);
+                const topDay = sortedDays[0];
+                return `El día con mayor facturación es el <strong>${{topDay.day}}</strong> con <strong>$${{topDay.gross.toLocaleString('es-CL')}} CLP</strong> en ventas brutas, representando el <strong>${{((topDay.gross / totalGross) * 100).toFixed(1)}}%</strong> de la semana.`;
+            }}
+            
+            // Transacciones / boletas
+            if (normalized.includes("transaccion") || normalized.includes("boleta") || normalized.includes("ventas hechas") || normalized.includes("operaciones") || normalized.includes("tickets")) {{
+                return `Se procesaron un total de <strong>${{totalTx.toLocaleString('es-CL')}} transacciones</strong> en tu punto de venta.`;
+            }}
+            
+            // Consolidaciones / agrupamiento
+            if (normalized.includes("consolid") || normalized.includes("agrup") || normalized.includes("unific") || normalized.includes("limpi")) {{
+                return `Se aplicaron las siguientes consolidaciones para limpiar el catálogo de ventas:<br><br>
+                1. <strong>Bebidas Fanta</strong>: Unificadas bajo <em>BEBIDA 350CC - FANTA ZERO POMELO</em>.<br>
+                2. <strong>Cafetería</strong>: Cafés preparados con leche (*Capuccino, Latte, Cortado*) consolidados bajo <em>CAFETERÍA - CAFÉ CON LECHE</em>. Espresso, Espresso Doble y Americano permanecen separados.<br>
+                3. <strong>Aguas</strong>: Divididas estrictamente en <em>CON GAS</em> y <em>SIN GAS</em>.<br>
+                4. <strong>Hamburguesas</strong>: Agrupadas por nombre base (se removió el texto "(INCLUYE PAPAS FRITAS)").<br>
+                5. <strong>Jugos</strong>: Consolidado total en la etiqueta <em>JUGOS NATURALES</em> para todos los sabores.`;
+            }}
+            
+            // Specific product search
+            let foundProduct = null;
+            for (const p of productsData) {{
+                if (normalized.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(normalized)) {{
+                    foundProduct = p;
+                    break;
+                }}
+            }}
+            if (foundProduct) {{
+                return `Encontré información de ventas para el producto <strong>${{foundProduct.name}}</strong>:<br>
+                - **Categoría**: ${{foundProduct.category}}<br>
+                - **Ranking de Ventas**: #${{foundProduct.rank}}<br>
+                - **Unidades Vendidas**: ${{foundProduct.units.toLocaleString('es-CL')}} unidades<br>
+                - **Recaudación Bruta**: $${{foundProduct.revenue.toLocaleString('es-CL')}} CLP.`;
+            }}
+            
+            // Specific category search
+            let foundCat = null;
+            const uniqueCats = [...new Set(productsData.map(p => p.category))];
+            for (const c of uniqueCats) {{
+                if (normalized.includes(c.toLowerCase()) || c.toLowerCase().includes(normalized)) {{
+                    foundCat = c;
+                    break;
+                }}
+            }}
+            if (foundCat) {{
+                const catProducts = productsData.filter(p => p.category === foundCat);
+                const units = catProducts.reduce((s, p) => s + p.units, 0);
+                const gross = catProducts.reduce((s, p) => s + p.revenue, 0);
+                return `Para la categoría <strong>${{foundCat}}</strong> registramos:<br>
+                - **Productos distintos**: ${{catProducts.length}}<br>
+                - **Total unidades vendidas**: ${{units.toLocaleString('es-CL')}} unidades<br>
+                - **Total venta bruta**: $${{gross.toLocaleString('es-CL')}} CLP.`;
+            }}
+
+            // Fallback
+            return `No he podido encontrar una respuesta matemática para esa consulta. Prueba preguntándome:<br><br>
+            - <em>"¿Cuál es el producto estrella?"</em><br>
+            - <em>"¿Cuánto fue la comisión de débito?"</em><br>
+            - <em>"¿Qué día se vende más?"</em><br>
+            - <em>"¿Cuánto vendió American Prime Burger?"</em><br>
+            - <em>"¿Cuál es la venta neta real?"</em>`;
         }}
 
         // Sort Products
