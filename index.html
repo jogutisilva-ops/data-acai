@@ -1095,12 +1095,12 @@
                     
                     <!-- Suggested Questions Chips -->
                     <div class="chat-suggestions">
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es el producto estrella (más vendido)?')">⭐ Producto Estrella</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuánto dinero se pagó en comisiones?')">💸 Comisiones Totales</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Qué día es el más fuerte en ventas?')">📅 Día con más Ventas</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál fue la venta neta real?')">🛡️ Ingreso Neto Real</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cómo se consolidaron las hamburguesas o aguas?')">🛠️ Consolidaciones</span>
+                        <span class="suggestion-chip" onclick="askSuggested('dame el registro de venta por producto de la semana 2026-04-20/2026-04-26')">📊 Ventas del 20 de Abril</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuáles son los 5 productos con mayor ingreso neto después de comisiones?')">💰 Top 5 Productos Netos</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la hora peak de transacciones los días domingo?')">⚡ Hora Peak Domingos</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la participación y ticket promedio del Efectivo vs Visa - Débito?')">💳 Efectivo vs Visa Débito</span>
                     </div>
+
                     
                     <!-- Chat Input Field -->
                     <div class="chat-input-bar">
@@ -1303,10 +1303,17 @@
                 }
                 
                 if (data.response) {
-                    appendMessage(formatMarkdown(data.response), 'assistant');
+                    let msg = formatMarkdown(data.response);
+                    if (data.query_executed) {
+                        msg += `<div style="margin-top: 10px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: var(--text-muted); opacity: 0.85; background-color: var(--primary-light); padding: 8px 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--primary); word-break: break-all; line-height: 1.4;">🔍 <strong>Consulta SQL ejecutada:</strong><br>${data.query_executed}</div>`;
+                    }
+
+
+                    appendMessage(msg, 'assistant');
                 } else {
                     throw new Error('Empty response');
                 }
+
             })
             .catch(err => {
                 console.log('Error calling Vercel chat API, falling back to local engine:', err);

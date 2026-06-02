@@ -1,6 +1,8 @@
 import pandas as pd
 import re
 import json
+import sqlite3
+import os
 
 csv_path = "informe-productos-2026-02-01_2026-05-25.csv"
 xlsx_path = "informe-ventas-2026-02-01_2026-05-25.xlsx"
@@ -248,6 +250,75 @@ data_summary_dict = {
 }
 with open('data_summary.json', 'w', encoding='utf-8') as f:
     json.dump(data_summary_dict, f, ensure_ascii=False, indent=2)
+
+# Generar Base de Datos SQLite sales_data.db a partir de df_xl
+db_path = "sales_data.db"
+if os.path.exists(db_path):
+    try:
+        os.remove(db_path)
+    except Exception:
+        pass
+
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE ventas (
+        id_transaccion TEXT,
+        fecha_original TEXT,
+        fecha_datetime TEXT,
+        semana TEXT,
+        dia_semana TEXT,
+        descripcion_original TEXT,
+        producto_limpio TEXT,
+        categoria TEXT,
+        cantidad INTEGER,
+        precio_bruto REAL,
+        precio_neto REAL,
+        forma_pago TEXT,
+        fee_rate REAL,
+        fee_amount REAL,
+        net_after_fee REAL
+    )
+    """)
+    
+    # Asegurar formato string de Datetime
+    df_xl['Datetime_Str'] = df_xl['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    
+    rows_to_insert = []
+    for idx, row in df_xl.iterrows():
+        rows_to_insert.append((
+            str(row['ID de transacción']),
+            str(row['Fecha']),
+            str(row['Datetime_Str']),
+            str(row['Week']),
+            str(row['DayOfWeek_ES']),
+            str(row['Descripción']),
+            str(row['Clean_Desc']),
+            str(row['Categoría_Clean']),
+            int(row['Cantidad']) if pd.notna(row['Cantidad']) else 0,
+            float(row['Precio (Bruto)']) if pd.notna(row['Precio (Bruto)']) else 0.0,
+            float(row['Precio (Neto)']) if pd.notna(row['Precio (Neto)']) else 0.0,
+            str(row['Forma de pago']),
+            float(row['Fee_Rate']),
+            float(row['Fee_Amount']),
+            float(row['Net_After_Fee'])
+        ))
+        
+    cursor.executemany("""
+    INSERT INTO ventas (
+        id_transaccion, fecha_original, fecha_datetime, semana, dia_semana,
+        descripcion_original, producto_limpio, categoria, cantidad,
+        precio_bruto, precio_neto, forma_pago, fee_rate, fee_amount, net_after_fee
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, rows_to_insert)
+    
+    conn.commit()
+    conn.close()
+    print(f"Base de datos SQLite generada con éxito en {db_path}.")
+except Exception as e:
+    print(f"Error al generar base de datos SQLite: {e}")
+
 
 # HTML Construction
 html_template = f"""<!DOCTYPE html>
@@ -1241,12 +1312,12 @@ html_template += f"""
                     
                     <!-- Suggested Questions Chips -->
                     <div class="chat-suggestions">
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es el producto estrella (más vendido)?')">⭐ Producto Estrella</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuánto dinero se pagó en comisiones?')">💸 Comisiones Totales</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Qué día es el más fuerte en ventas?')">📅 Día con más Ventas</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál fue la venta neta real?')">🛡️ Ingreso Neto Real</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cómo se consolidaron las hamburguesas o aguas?')">🛠️ Consolidaciones</span>
+                        <span class="suggestion-chip" onclick="askSuggested('dame el registro de venta por producto de la semana 2026-04-20/2026-04-26')">📊 Ventas del 20 de Abril</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuáles son los 5 productos con mayor ingreso neto después de comisiones?')">💰 Top 5 Productos Netos</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la hora peak de transacciones los días domingo?')">⚡ Hora Peak Domingos</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la participación y ticket promedio del Efectivo vs Visa - Débito?')">💳 Efectivo vs Visa Débito</span>
                     </div>
+
                     
                     <!-- Chat Input Field -->
                     <div class="chat-input-bar">
@@ -1449,10 +1520,17 @@ html_template += f"""
                 }}
                 
                 if (data.response) {{
-                    appendMessage(formatMarkdown(data.response), 'assistant');
+                    let msg = formatMarkdown(data.response);
+                    if (data.query_executed) {{
+                        msg += `<div style="margin-top: 10px; font-size: 11px; font-family: 'Courier New', Courier, monospace; color: var(--text-muted); opacity: 0.85; background-color: var(--primary-light); padding: 8px 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--primary); word-break: break-all; line-height: 1.4;">🔍 <strong>Consulta SQL ejecutada:</strong><br>${{data.query_executed}}</div>`;
+                    }}
+
+
+                    appendMessage(msg, 'assistant');
                 }} else {{
                     throw new Error('Empty response');
                 }}
+
             }})
             .catch(err => {{
                 console.log('Error calling Vercel chat API, falling back to local engine:', err);
