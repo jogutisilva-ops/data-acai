@@ -47,6 +47,8 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'error_no_key': True, 'response': 'La clave de API (GEMINI_API_KEY) no está configurada en el panel de Vercel.'}).encode('utf-8'))
             return
 
+        api_key = api_key.strip()
+
         # Call Gemini API using standard library urllib
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
