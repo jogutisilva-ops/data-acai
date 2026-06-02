@@ -50,7 +50,7 @@ class handler(BaseHTTPRequestHandler):
         api_key = api_key.strip()
 
         # Call Gemini API using standard library urllib
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
         
         system_instruction = (
             "Eres un asistente virtual experto en análisis de datos comerciales de Açaí Prime.\n"
@@ -81,7 +81,10 @@ class handler(BaseHTTPRequestHandler):
         req = urllib.request.Request(
             url,
             data=json.dumps(gemini_req_body).encode('utf-8'),
-            headers={'Content-Type': 'application/json'},
+            headers={
+                'Content-Type': 'application/json',
+                'X-goog-api-key': api_key
+            },
             method='POST'
         )
 
