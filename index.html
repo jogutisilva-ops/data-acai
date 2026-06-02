@@ -1295,6 +1295,17 @@
                 const top = productsData[0];
                 return `El producto estrella es <strong>${top.name}</strong> con <strong>${top.units.toLocaleString('es-CL')} unidades</strong> vendidas y una recaudación bruta de <strong>${top.revenue.toLocaleString('es-CL', {style: 'currency', currency: 'CLP', maximumFractionDigits: 0})}</strong>.`;
             }
+
+            // Promedio semanal
+            if (normalized.includes("promedio") && (normalized.includes("semanal") || normalized.includes("semana"))) {
+                const numWeeks = weeklyData.length;
+                if (numWeeks === 0) return "No hay suficientes datos semanales para calcular el promedio.";
+                const totalWeeklyGross = weeklyData.reduce((sum, w) => sum + w.gross, 0);
+                const totalWeeklyTx = weeklyData.reduce((sum, w) => sum + w.tx, 0);
+                const avgWeeklyGross = totalWeeklyGross / numWeeks;
+                const avgWeeklyTx = totalWeeklyTx / numWeeks;
+                return `El promedio de venta semanal desde el inicio de operaciones es de <strong>$${avgWeeklyGross.toLocaleString('es-CL', {maximumFractionDigits: 0})} CLP</strong> por semana, con una media de <strong>${avgWeeklyTx.toFixed(1)} transacciones</strong> semanales (calculado sobre un total de ${numWeeks} semanas de ventas registradas).`;
+            }
             
             // Comisiones / fees
             if (normalized.includes("comision") || normalized.includes("comisiones") || normalized.includes("cobro") || normalized.includes("descuento forma de pago") || normalized.includes("porcentaje total")) {
