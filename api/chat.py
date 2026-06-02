@@ -86,8 +86,9 @@ def execute_sql(query):
         return {"error": str(e)}
 
 def call_gemini(payload, api_key):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     req = urllib.request.Request(
+
         url,
         data=json.dumps(payload).encode('utf-8'),
         headers={
@@ -136,51 +137,69 @@ class handler(BaseHTTPRequestHandler):
  
         api_key = api_key.strip()
  
-        # Initial request to Gemini with tools
-        gemini_payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": user_message}]
-                }
-            ],
-            "systemInstruction": {
-                "parts": [{"text": system_instruction}]
-            },
-            "tools": tools,
-            "generationConfig": {
-                "temperature": 0.0
+        # Multi-turn Agent loop to support sequential tool executions (e.g. detailed product breakdowns and counts)
+        contents = [
+            {
+                "role": "user",
+                "parts": [{"text": user_message}]
             }
-        }
- 
+        ]
+        
+        loop_count = 0
+        max_loops = 5
+        last_query_executed = None
+        final_text = ""
+        
         try:
-            res_data = call_gemini(gemini_payload, api_key)
-            
-            candidate = res_data.get('candidates', [{}])[0]
-            content = candidate.get('content', {})
-            parts = content.get('parts', [])
-            
-            function_call = None
-            for part in parts:
-                if 'functionCall' in part:
-                    function_call = part['functionCall']
+            while loop_count < max_loops:
+                gemini_payload = {
+                    "contents": contents,
+                    "systemInstruction": {
+                        "parts": [{"text": system_instruction}]
+                    },
+                    "tools": tools,
+                    "generationConfig": {
+                        "temperature": 0.0 if loop_count == 0 else 0.2
+                    }
+                }
+                
+                res_data = call_gemini(gemini_payload, api_key)
+                
+                candidate = res_data.get('candidates', [{}])[0]
+                content = candidate.get('content', {})
+                parts = content.get('parts', [])
+                
+                # Guardar respuesta del modelo en el historial de conversación
+                contents.append(content)
+                
+                # Buscar si hay llamado a función en la respuesta
+                function_call = None
+                for part in parts:
+                    if 'functionCall' in part:
+                        function_call = part['functionCall']
+                        break
+                        
+                if not function_call:
+                    # Sin llamadas a función, tenemos la respuesta de texto final de Gemini
+                    for part in parts:
+                        if 'text' in part:
+                            final_text += part['text']
                     break
                     
-            if function_call:
                 func_name = function_call.get('name')
                 args = function_call.get('args', {})
                 sql_query = args.get('query')
                 
-                # Execute query
+                # Guardar la última query ejecutada
+                last_query_executed = sql_query
+                
+                # Ejecutar consulta de lectura SQL
                 if func_name == "run_sql_query":
                     query_result = execute_sql(sql_query)
                 else:
                     query_result = {"error": f"Función {func_name} no disponible."}
-                
-                # Build second turn payload
-                model_turn = content
-                
-                # Match function call ID if present
+                    
+                # Guardar el resultado de la función en el historial
                 fc_id = function_call.get('id')
                 fn_response_part = {
                     "functionResponse": {
@@ -191,71 +210,33 @@ class handler(BaseHTTPRequestHandler):
                 if fc_id:
                     fn_response_part["functionResponse"]["id"] = fc_id
                     
-                function_turn = {
+                contents.append({
                     "role": "function",
                     "parts": [fn_response_part]
-                }
+                })
                 
-                second_payload = {
-                    "contents": [
-                        {
-                            "role": "user",
-                            "parts": [{"text": user_message}]
-                        },
-                        model_turn,
-                        function_turn
-                    ],
-                    "systemInstruction": {
-                        "parts": [{"text": system_instruction}]
-                    },
-                    "tools": tools,
-                    "generationConfig": {
-                        "temperature": 0.2
-                    }
-                }
+                loop_count += 1
                 
-                # Call Gemini again
-                res_data_final = call_gemini(second_payload, api_key)
+            if not final_text:
+                final_text = "No se recibió una síntesis de respuesta del modelo."
                 
-                final_candidate = res_data_final.get('candidates', [{}])[0]
-                final_parts = final_candidate.get('content', {}).get('parts', [])
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response_payload = {
+                'response': final_text
+            }
+            if last_query_executed:
+                response_payload['query_executed'] = last_query_executed
                 
-                final_text = ""
-                for part in final_parts:
-                    if 'text' in part:
-                        final_text += part['text']
-                        
-                if not final_text:
-                    final_text = "No se recibió una síntesis de respuesta del modelo."
-                    
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'response': final_text, 
-                    'query_executed': sql_query
-                }).encode('utf-8'))
-                
-            else:
-                # Answered directly without calling tool
-                direct_text = ""
-                for part in parts:
-                    if 'text' in part:
-                        direct_text += part['text']
-                        
-                if not direct_text:
-                    direct_text = "No se recibió respuesta del modelo."
-                    
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(json.dumps({'response': direct_text}).encode('utf-8'))
-                
+            self.wfile.write(json.dumps(response_payload).encode('utf-8'))
+            
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'error': f'Error de ejecución en el Agente de Datos: {str(e)}'}).encode('utf-8'))
+
