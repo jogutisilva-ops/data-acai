@@ -114,6 +114,7 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             req_data = json.loads(body.decode('utf-8'))
             user_message = req_data.get('message', '')
+            client_time = req_data.get('client_time', '')
         except Exception as e:
             self.send_response(400)
             self.send_header('Content-Type', 'application/json')
@@ -121,6 +122,16 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({'error': 'Invalid JSON body: ' + str(e)}).encode('utf-8'))
             return
+
+        if not client_time:
+            from datetime import datetime
+            client_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+
+        dynamic_system_instruction = (
+            f"FECHA Y HORA ACTUAL DEL CLIENTE (Úsala como referencia absoluta de hoy, ayer, etc. y para contestar preguntas sobre el día actual): {client_time}\n\n"
+            f"{system_instruction}"
+        )
+
  
         # Get API Key
         api_key = os.environ.get('GEMINI_API_KEY')
@@ -155,7 +166,7 @@ class handler(BaseHTTPRequestHandler):
                 gemini_payload = {
                     "contents": contents,
                     "systemInstruction": {
-                        "parts": [{"text": system_instruction}]
+                        "parts": [{"text": dynamic_system_instruction}]
                     },
                     "tools": tools,
                     "generationConfig": {

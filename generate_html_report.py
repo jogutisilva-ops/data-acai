@@ -1495,14 +1495,22 @@ html_template += f"""
             history.appendChild(typingDiv);
             history.scrollTop = history.scrollHeight;
             
+            // Obtener fecha y hora actual en la zona horaria del cliente en español
+            const clientOptions = {{ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }};
+            const clientTime = new Date().toLocaleString('es-CL', clientOptions);
+
             // Fetch API from Vercel Serverless Function
             fetch('/api/chat', {{
                 method: 'POST',
                 headers: {{
                     'Content-Type': 'application/json'
                 }},
-                body: JSON.stringify({{ message: text }})
+                body: JSON.stringify({{ 
+                    message: text,
+                    client_time: clientTime
+                }})
             }})
+
             .then(res => {{
                 if (!res.ok) throw new Error('API server returned error');
                 return res.json();
