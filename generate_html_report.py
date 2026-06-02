@@ -226,6 +226,29 @@ for idx, row in payments_summary.iterrows():
         'tx': int(row['Transactions'])
     })
 
+# Save data summary JSON for the Serverless chat function
+data_summary_dict = {
+    'total_gross': total_gross,
+    'total_fees': total_fees,
+    'total_net_real': total_net_real,
+    'total_tx': total_tx,
+    'category_sales': cat_sales_js,
+    'day_of_week_sales': dow_sales_js,
+    'weekly_sales': weekly_sales_js,
+    'payment_methods': payment_list_js,
+    'products': product_list_js,
+    'unifications': {
+        'Fanta': 'BEBIDA 350CC - FANTA ZERO POMELO (Consolida Fanta Pomelo Zero, Bebidas 350cc - Fanta Pomelo Zero, etc.)',
+        'Common Drinks': 'BEBIDA 350CC - COCA COLA, BEBIDA 350CC - KEM (Une ventas de categorías Açaí y Burger)',
+        'Water': 'AGUA VITAL 600ML - CON GAS y SIN GAS (Separados por gas, unifica variaciones tipográficas)',
+        'Burgers': 'Agrupa por hamburguesa base, eliminando la frase (INCLUYE PAPAS FRITAS)',
+        'Milky Coffee': 'CAFETERÍA - CAFÉ CON LECHE (Agrupa Capuccino, Latte, Cortado. Espresso, Espresso Doble y Americano permanecen separados)',
+        'Natural Juices': 'JUGOS NATURALES (Agrupa todos los jugos de frutas)'
+    }
+}
+with open('data_summary.json', 'w', encoding='utf-8') as f:
+    json.dump(data_summary_dict, f, ensure_ascii=False, indent=2)
+
 # HTML Construction
 html_template = f"""<!DOCTYPE html>
 <html lang="es">
@@ -1368,6 +1391,19 @@ html_template += f"""
             }}
         }}
 
+        function formatMarkdown(text) {{
+            if (!text) return "";
+            let html = text;
+            // Bold
+            html = html.replace(/\\*\\*([^\\*]+)\\*\\*/g, '<strong>$1</strong>');
+            // Bullet points
+            html = html.replace(/^\\s*-\\s+(.+)/gm, '<li style="margin-left: 20px; margin-bottom: 4px;">$1</li>');
+            // Paragraph breaks
+            html = html.replace(/\\n\\n/g, '<br><br>');
+            html = html.replace(/\\n/g, '<br>');
+            return html;
+        }}
+
         function sendChatMessage() {{
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
@@ -1384,18 +1420,49 @@ html_template += f"""
             const typingDiv = document.createElement('div');
             typingDiv.className = 'chat-message message-assistant';
             typingDiv.id = 'typingIndicator';
-            typingDiv.innerHTML = '<em>Analizando datos...</em>';
+            typingDiv.innerHTML = '<em>Consultando asistente...</em>';
             history.appendChild(typingDiv);
             history.scrollTop = history.scrollHeight;
             
-            // Simulate natural delay for a nicer chatbot feel
-            setTimeout(() => {{
+            // Fetch API from Vercel Serverless Function
+            fetch('/api/chat', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json'
+                }},
+                body: JSON.stringify({{ message: text }})
+            }})
+            .then(res => {{
+                if (!res.ok) throw new Error('API server returned error');
+                return res.json();
+            }})
+            .then(data => {{
                 const indicator = document.getElementById('typingIndicator');
                 if (indicator) indicator.remove();
                 
-                const answer = getAssistantAnswer(text);
-                appendMessage(answer, 'assistant');
-            }}, 600);
+                // Fallback locally if GEMINI_API_KEY is not set on Vercel yet
+                if (data.error_no_key) {{
+                    console.log('Gemini API key missing on Vercel. Falling back to local engine...');
+                    const localAnswer = getAssistantAnswer(text);
+                    appendMessage(localAnswer, 'assistant');
+                    return;
+                }}
+                
+                if (data.response) {{
+                    appendMessage(formatMarkdown(data.response), 'assistant');
+                }} else {{
+                    throw new Error('Empty response');
+                }}
+            }})
+            .catch(err => {{
+                console.log('Error calling Vercel chat API, falling back to local engine:', err);
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) indicator.remove();
+                
+                // Fallback to local mathematical engine
+                const localAnswer = getAssistantAnswer(text);
+                appendMessage(localAnswer, 'assistant');
+            }});
         }}
 
         function appendMessage(htmlContent, sender) {{
