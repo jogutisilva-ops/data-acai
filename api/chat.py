@@ -33,8 +33,14 @@ system_instruction = (
     "1. Si el usuario te hace una pregunta que requiera consultar datos, debes llamar a la función `run_sql_query` escribiendo una consulta SQL SELECT válida sobre la tabla 'ventas'.\n"
     "2. Escribe consultas SQL limpias y optimizadas. Si necesitas agrupar por producto o semana, usa `GROUP BY` y ordena con `ORDER BY` de mayor a menor.\n"
     "3. IMPORTANTE: En SQLite las comparaciones de texto con LIKE o de igualdad son case-insensitive. Utiliza `producto_limpio` para nombres de productos y `categoria` para categorías.\n"
-    "4. Cuando recibas los datos de la base de datos, presenta la información al usuario en un formato amigable, profesional y estructurado usando Markdown. Redondea los números cuando sea pertinente (ej. comisiones o ingresos) para facilitar la lectura."
+    "4. Cuando recibas los datos de la base de datos, presenta la información al usuario en un formato amigable, profesional y estructurado usando Markdown. Redondea los números cuando sea pertinente (ej. comisiones o ingresos) para facilitar la lectura.\n"
+    "5. CAPACIDAD DE PROYECCIÓN Y EXTRAPOLACIÓN:\n"
+    "   - Si el usuario te solicita proyecciones futuras (ej. 'proyectar ventas del próximo mes' o 'proyección para las siguientes 4 semanas'), NO te niegues.\n"
+    "   - Utiliza la data histórica ejecutando consultas SQL para calcular el promedio de venta diario/semanal reciente o la tasa de crecimiento promedio.\n"
+    "   - Realiza la extrapolación matemática lineal de forma lógica en tu proceso de razonamiento.\n"
+    "   - Explica de manera transparente tu metodología (ej. 'Usando el promedio semanal de las últimas 4 semanas completas que es de $X...') e indica que es una estimación estadística lineal basada en el historial."
 )
+
 
 tools = [
     {
