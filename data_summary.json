@@ -156,36 +156,20 @@
   ],
   "payment_methods": [
     {
-      "name": "Visa - Débito",
+      "name": "Tarjeta de Débito",
       "rate": 1.55,
-      "gross": 30780839,
-      "fee": 477103,
-      "net": 30303735,
-      "tx": 3135
+      "gross": 43086272,
+      "fee": 667837,
+      "net": 42418434,
+      "tx": 4371
     },
     {
-      "name": "Mastercard - Débito",
-      "rate": 1.55,
-      "gross": 12305433,
-      "fee": 190734,
-      "net": 12114698,
-      "tx": 1236
-    },
-    {
-      "name": "Visa - Crédito",
+      "name": "Tarjeta de Crédito",
       "rate": 2.5,
-      "gross": 11041117,
-      "fee": 276027,
-      "net": 10765089,
-      "tx": 1022
-    },
-    {
-      "name": "Mastercard - Crédito",
-      "rate": 2.5,
-      "gross": 8256243,
-      "fee": 206406,
-      "net": 8049836,
-      "tx": 771
+      "gross": 19465292,
+      "fee": 486632,
+      "net": 18978659,
+      "tx": 1810
     },
     {
       "name": "Efectivo",
@@ -194,22 +178,6 @@
       "fee": 0,
       "net": 1955565,
       "tx": 228
-    },
-    {
-      "name": "American Express - Crédito",
-      "rate": 2.5,
-      "gross": 167182,
-      "fee": 4179,
-      "net": 163002,
-      "tx": 16
-    },
-    {
-      "name": "Visa",
-      "rate": 2.5,
-      "gross": 750,
-      "fee": 18,
-      "net": 731,
-      "tx": 1
     },
     {
       "name": "No especificado",

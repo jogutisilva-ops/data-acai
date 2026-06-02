@@ -208,7 +208,21 @@ for idx, row in weekly_sales.iterrows():
     })
 
 # Compute payment methods and fees
-payments_summary = df_xl.groupby('Forma de pago', dropna=False).agg(
+def get_payment_group(pm):
+    if pd.isna(pm):
+        return "No especificado"
+    pm_str = str(pm).upper()
+    if 'DÉBITO' in pm_str or 'DEBITO' in pm_str:
+        return 'Tarjeta de Débito'
+    elif 'CRÉDITO' in pm_str or 'CREDITO' in pm_str or 'VISA' in pm_str or 'AMERICAN' in pm_str:
+        return 'Tarjeta de Crédito'
+    elif 'EFECTIVO' in pm_str:
+        return 'Efectivo'
+    return 'No especificado'
+
+df_xl['Forma_Pago_Group'] = df_xl['Forma de pago'].apply(get_payment_group)
+
+payments_summary = df_xl.groupby('Forma_Pago_Group', dropna=False).agg(
     Gross=('Precio (Bruto)', 'sum'),
     Fee_Amount=('Fee_Amount', 'sum'),
     Net_After_Fee=('Net_After_Fee', 'sum'),
@@ -217,8 +231,13 @@ payments_summary = df_xl.groupby('Forma de pago', dropna=False).agg(
 
 payment_list_js = []
 for idx, row in payments_summary.iterrows():
-    pm_name = str(row['Forma de pago']) if pd.notna(row['Forma de pago']) else "No especificado"
-    rate_pct = get_fee_rate(row['Forma de pago']) * 100
+    pm_name = str(row['Forma_Pago_Group'])
+    if pm_name == 'Tarjeta de Débito':
+        rate_pct = 1.55
+    elif pm_name == 'Tarjeta de Crédito':
+        rate_pct = 2.50
+    else:
+        rate_pct = 0.00
     payment_list_js.append({
         'name': pm_name,
         'rate': rate_pct,
@@ -1315,7 +1334,7 @@ html_template += f"""
                         <span class="suggestion-chip" onclick="askSuggested('dame el registro de venta por producto de la semana 2026-04-20/2026-04-26')">📊 Ventas del 20 de Abril</span>
                         <span class="suggestion-chip" onclick="askSuggested('¿Cuáles son los 5 productos con mayor ingreso neto después de comisiones?')">💰 Top 5 Productos Netos</span>
                         <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la hora peak de transacciones los días domingo?')">⚡ Hora Peak Domingos</span>
-                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la participación y ticket promedio del Efectivo vs Visa - Débito?')">💳 Efectivo vs Visa Débito</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la participación y ticket promedio del Efectivo vs Débito?')">💳 Efectivo vs Débito</span>
                     </div>
 
                     
