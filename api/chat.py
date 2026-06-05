@@ -275,5 +275,6 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps({'error': f'Error de ejecución en el Agente de Datos: {str(e)}'}).encode('utf-8'))
+            key_mask = f"{api_key[:6]}...{api_key[-4:]}" if api_key else "None"
+            self.wfile.write(json.dumps({'error': f'Error de ejecución en el Agente de Datos: {str(e)} (API Key: {key_mask})'}).encode('utf-8'))
 
