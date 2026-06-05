@@ -1258,10 +1258,13 @@
                     client_time: clientTime
                 })
             })
-
             .then(res => {
-                if (!res.ok) throw new Error('API server returned error');
-                return res.json();
+                return res.json().then(data => {
+                    if (!res.ok) {
+                        throw new Error(data.error || 'Server error');
+                    }
+                    return data;
+                });
             })
             .then(data => {
                 const indicator = document.getElementById('typingIndicator');
@@ -1289,13 +1292,17 @@
 
             })
             .catch(err => {
-                console.log('Error calling Vercel chat API, falling back to local engine:', err);
+                console.log('Error calling Vercel chat API:', err);
                 const indicator = document.getElementById('typingIndicator');
                 if (indicator) indicator.remove();
                 
-                // Fallback to local mathematical engine
-                const localAnswer = getAssistantAnswer(text);
-                appendMessage(localAnswer, 'assistant');
+                if (err.message.includes('Too Many Requests') || err.message.includes('429')) {
+                    appendMessage('⚠️ <strong>Límite de Consultas Excedido:</strong> El asistente ha recibido demasiadas preguntas seguidas bajo el plan gratuito de Gemini. Por favor, espera 15 a 30 segundos para que se libere la cuota e intenta tu pregunta nuevamente.', 'assistant');
+                } else {
+                    // Fallback to local mathematical engine
+                    const localAnswer = getAssistantAnswer(text);
+                    appendMessage(localAnswer, 'assistant');
+                }
             });
         }
 

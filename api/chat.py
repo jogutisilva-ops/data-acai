@@ -103,8 +103,8 @@ def call_gemini(payload, api_key):
     import time
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     
-    max_retries = 3
-    base_delay = 2.0  # seconds
+    max_retries = 1
+    base_delay = 3.0  # seconds
     
     for attempt in range(max_retries + 1):
         req = urllib.request.Request(
