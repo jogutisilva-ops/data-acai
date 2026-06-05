@@ -100,19 +100,31 @@ def execute_sql(query):
         return {"error": str(e)}
 
 def call_gemini(payload, api_key):
+    import time
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-    req = urllib.request.Request(
-
-        url,
-        data=json.dumps(payload).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'X-goog-api-key': api_key
-        },
-        method='POST'
-    )
-    with urllib.request.urlopen(req) as response:
-        return json.loads(response.read().decode('utf-8'))
+    
+    max_retries = 3
+    base_delay = 2.0  # seconds
+    
+    for attempt in range(max_retries + 1):
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+                'X-goog-api-key': api_key
+            },
+            method='POST'
+        )
+        try:
+            with urllib.request.urlopen(req) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                time.sleep(delay)
+                continue
+            raise e
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
