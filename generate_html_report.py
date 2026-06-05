@@ -292,12 +292,16 @@ try:
         producto_limpio TEXT,
         categoria TEXT,
         cantidad INTEGER,
+        precio_sin_descuento REAL,
+        descuento REAL,
         precio_bruto REAL,
         precio_neto REAL,
         forma_pago TEXT,
         fee_rate REAL,
         fee_amount REAL,
-        net_after_fee REAL
+        net_after_fee REAL,
+        sku TEXT,
+        dispositivo TEXT
     )
     """)
     
@@ -316,20 +320,25 @@ try:
             str(row['Clean_Desc']),
             str(row['Categoría_Clean']),
             int(row['Cantidad']) if pd.notna(row['Cantidad']) else 0,
+            float(row['Precio sin descuento']) if pd.notna(row['Precio sin descuento']) else 0.0,
+            float(row['Descuento']) if pd.notna(row['Descuento']) else 0.0,
             float(row['Precio (Bruto)']) if pd.notna(row['Precio (Bruto)']) else 0.0,
             float(row['Precio (Neto)']) if pd.notna(row['Precio (Neto)']) else 0.0,
             str(row['Forma de pago']),
             float(row['Fee_Rate']),
             float(row['Fee_Amount']),
-            float(row['Net_After_Fee'])
+            float(row['Net_After_Fee']),
+            str(row['SKU']) if pd.notna(row['SKU']) else '',
+            str(row['Número de serie del dispositivo']) if pd.notna(row['Número de serie del dispositivo']) else ''
         ))
         
     cursor.executemany("""
     INSERT INTO ventas (
         id_transaccion, fecha_original, fecha_datetime, semana, dia_semana,
         descripcion_original, producto_limpio, categoria, cantidad,
-        precio_bruto, precio_neto, forma_pago, fee_rate, fee_amount, net_after_fee
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        precio_sin_descuento, descuento, precio_bruto, precio_neto,
+        forma_pago, fee_rate, fee_amount, net_after_fee, sku, dispositivo
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows_to_insert)
     
     conn.commit()
@@ -1335,6 +1344,7 @@ html_template += f"""
                         <span class="suggestion-chip" onclick="askSuggested('¿Cuáles son los 5 productos con mayor ingreso neto después de comisiones?')">💰 Top 5 Productos Netos</span>
                         <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la hora peak de transacciones los días domingo?')">⚡ Hora Peak Domingos</span>
                         <span class="suggestion-chip" onclick="askSuggested('¿Cuál es la participación y ticket promedio del Efectivo vs Débito?')">💳 Efectivo vs Débito</span>
+                        <span class="suggestion-chip" onclick="askSuggested('¿Cuántas ventas con un 20% de descuento se registraron desde el 11 de mayo?')">🏷️ Descuentos 20%</span>
                     </div>
 
                     
